@@ -1,0 +1,36 @@
+{
+    "$id": "https://saman.dev/asml/sending-email.asm.json",
+    "$schema": "https://saman.dev/asml/schema.json",
+    "asml": "1.0.0",
+    "info": {
+        "title": "sending-email",
+        "description": "A schema model for run-time state migration of sending an email",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Saman Soltani",
+            "email": "saman@mail.upb.de",
+            "url": "samansoltani.com"
+        }
+    },
+    "properties": {
+        "from": {
+            "description": "The sender email",
+            "type": "string",
+            "format": "email"
+        },
+        "to": {
+            "description": "The reciever email",
+            "type": "string",
+            "format": "email"
+        },
+        "body": {
+            "description": "The body text of the email",
+            "type": "string"
+        }
+    },
+    "required": [
+        "from",
+        "to",
+        "body"
+    ]
+}
