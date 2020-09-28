@@ -1,6 +1,7 @@
 export interface Device {
     _id: string,
     name: string,
+    models?: Array<string>,
 }
 
 export interface Model {

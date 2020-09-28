@@ -27,6 +27,9 @@
   },
   "homepage": "https://github.com/saman/rsm-node-mqtt#readme",
   "dependencies": {
+    "ajv": "^6.12.5",
+    "asml": "^1.0.0",
+    "asml-validator": "^0.1.0",
     "async-mqtt": "^2.6.1",
     "uuid": "^8.3.0"
   }

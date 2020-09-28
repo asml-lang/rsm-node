@@ -10,18 +10,21 @@ export class Api {
     private client: Client;
     private serverConfig: Server;
     private onMessageCallBack: Function;
-    constructor(server: Server, onMessageCallBack: Function) {
+    private onOnlineCallBack: Function;
+    constructor(server: Server, onMessageCallBack: Function, onOnlineCallBack: Function) {
         this.serverConfig = server === undefined ? SERVER : server;
         this.onMessageCallBack = onMessageCallBack;
+        this.onOnlineCallBack = onOnlineCallBack;
     }
 
-    public async run() {
+    public async run(device: Device) {
         // models/{model_name}/{from}/{to}
         this.client = await connect(
             this.serverConfig.url,
             {
                 port: this.serverConfig.port,
-                clean: true
+                clean: true,
+                will: { topic: `online/${device._id}`, payload: 'false', qos: 2, retain: true }
             }
         );
 
@@ -40,6 +43,7 @@ export class Api {
         await this.subscribe(`${model.name}`);
         const b = await this.subscribe(`${model.name}/${device._id}`);
         console.log('api:', 'subscribe', `${model.name}/${device._id}`, b);
+        await this.setOnline(device._id);
     }
 
     public async publishState(model_name: string, device_id: string, device: Device, state: any) {
@@ -70,20 +74,31 @@ export class Api {
         await this.publish(`${model.name}/${otherDevice._id}`, data);
     }
 
+    private async setOnline(device_id: string) {
+        await this.client.publish(`online/${device_id}`, 'true', { qos: 2, retain: true });
+        await this.subscribe('online/+');
+    }
+
     private async subscribe(topic: string) {
         return await this.client.subscribe(topic, { qos: 2 });
     }
+
     private async publish(topic: string, message: any) {
-        return await this.client.publish(topic, this.json(message), { qos: 2 });
+        return await this.client.publish(topic, this.json(message));
     }
 
     private OnMessage(topic: string, payload: Buffer) {
         console.log('api: OnMessage');
         console.log('topic', topic);
         console.log('message',);
-        const model_name = topic.split("/").shift();
+        const main_topic = topic.split("/").shift();
         const device_id = topic.split("/").length > 0 ? topic.split("/")[1] : undefined;
-        this.onMessageCallBack(model_name, this.sonj(payload.toString()), device_id);
+
+        if (main_topic === 'online') {
+            this.onOnlineCallBack(device_id, payload.toString() == 'true');
+        } else {
+            this.onMessageCallBack(main_topic, this.sonj(payload.toString()), device_id);
+        }
     }
 
     private json(obj: any) {
