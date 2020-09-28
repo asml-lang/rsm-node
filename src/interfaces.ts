@@ -9,7 +9,6 @@ export interface Model {
     name: string,
     content: string,
     device_id: string,
-    devices?: Array<Device>,
     state?: any,
 }
 

@@ -18,18 +18,22 @@ export class Api {
     }
 
     public async run(device: Device) {
-        // models/{model_name}/{from}/{to}
+        // {model_name}/{device_id}
+        // online/{device_id}
         this.client = await connect(
             this.serverConfig.url,
             {
                 port: this.serverConfig.port,
                 clean: true,
-                will: { topic: `online/${device._id}`, payload: 'false', qos: 2, retain: true }
+                will: { topic: `online/${device._id}`, payload: '', qos: 2, retain: true }
             }
         );
 
         if (this.client !== undefined) {
             this.client.on('message', this.OnMessage.bind(this));
+
+            // set the online status
+            await this.setOnline(device._id);
         }
     }
 
@@ -39,11 +43,17 @@ export class Api {
             data: { device, new: true },
         };
 
-        await this.publish(`${model.name}`, data);
-        await this.subscribe(`${model.name}`);
+        // subscribe to its model's topic, so it can receive data from other devices
         const b = await this.subscribe(`${model.name}/${device._id}`);
-        console.log('api:', 'subscribe', `${model.name}/${device._id}`, b);
-        await this.setOnline(device._id);
+        console.log('api:', 'subscribe', b);
+
+        // introduce the device to everybody with the same model
+        await this.publish(`${model.name}`, data);
+
+        // subscribe to the same model's topic
+        const a = await this.subscribe(`${model.name}`);
+        console.log('api:', 'subscribe', a);
+
     }
 
     public async publishState(model_name: string, device_id: string, device: Device, state: any) {
@@ -51,7 +61,7 @@ export class Api {
             action: 'response-state',
             data: { device, state },
         };
-        this.publish(`${model_name}/${device_id}`, data);
+        return this.publish(`${model_name}/${device_id}`, data);
     }
 
     public async getStateDevice(model_name: string, device_id: string, device: Device) {
@@ -59,7 +69,7 @@ export class Api {
             action: 'request-state',
             data: { device }
         }
-        this.publish(`${model_name}/${device_id}`, data);
+        return this.publish(`${model_name}/${device_id}`, data);
     }
 
     public async publishDeviceToNewDevice(otherDevice: Device, device: Device, model: Model) {
@@ -69,14 +79,20 @@ export class Api {
             data: { device, new: false },
         };
 
-        console.log('publishDeviceToNewDevice', data);
+        console.log('publishDeviceToNewDevice', `${model.name}/${otherDevice._id}`, data);
 
-        await this.publish(`${model.name}/${otherDevice._id}`, data);
+        return await this.publish(`${model.name}/${otherDevice._id}`, data);
     }
 
     private async setOnline(device_id: string) {
+        // tell everybody I'm online
         await this.client.publish(`online/${device_id}`, 'true', { qos: 2, retain: true });
+
+        // subscribe to online's topic to get everybody's online status
         await this.subscribe('online/+');
+
+        // unsubscribe itselft from online topic
+        await this.client.unsubscribe(`online/${device_id}`);
     }
 
     private async subscribe(topic: string) {
@@ -90,8 +106,12 @@ export class Api {
     private OnMessage(topic: string, payload: Buffer) {
         console.log('api: OnMessage');
         console.log('topic', topic);
-        console.log('message',);
+        console.log('message', payload.toString());
+
+        // get the first part of topic. like: sending-email/1 -> sending-email
         const main_topic = topic.split("/").shift();
+
+        // get the second part of topic. like: sending-email/1 -> 1
         const device_id = topic.split("/").length > 0 ? topic.split("/")[1] : undefined;
 
         if (main_topic === 'online') {

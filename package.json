@@ -1,6 +1,6 @@
 {
   "name": "rsm-node-mqtt",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Run-time State Migration Node Package based on MQTT",
   "main": "dist/index.js",
   "author": "Saman Soltani (samansoltani.com)",

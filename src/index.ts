@@ -100,13 +100,8 @@ export default class RunTimeStateMigration {
 
                 console.log('onMessage', 'model', model.name);
 
-                if (model.devices === undefined) {
-                    model.devices = [];
-                }
-
                 const device = message.data.device;
                 console.log('onMessage', 'model', device.name);
-                model.devices.push(device);
 
                 if (device.models === undefined) {
                     device.models = [];
@@ -140,16 +135,17 @@ export default class RunTimeStateMigration {
     }
 
     private onOnline(device_id: string, online: boolean) {
-        console.log('onOnline:', device_id, online);
-        console.log(this.devices);
-        if (!online) {
-            const index = this.devices.findIndex(device => device._id === device_id);
-            if (index >= 0) {
-                this.devices.splice(index, 1);
-            }
+        if (device_id !== this.device._id) {
+            console.log('onOnline:', device_id, online);
             console.log(this.devices);
+            if (!online) {
+                const index = this.devices.findIndex(device => device._id === device_id);
+                if (index >= 0) {
+                    this.devices.splice(index, 1);
+                }
+                console.log(this.devices);
+            }
         }
-
     }
 }
 
