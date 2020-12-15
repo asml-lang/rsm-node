@@ -7,7 +7,7 @@ const SERVER: Server = {
 }
 
 export class Api {
-    private client: Client;
+    private client: any;
     private serverConfig: Server;
     private onMessageCallBack: Function;
     private onOnlineCallBack: Function;
