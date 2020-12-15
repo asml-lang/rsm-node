@@ -8,17 +8,29 @@ export default class RunTimeStateMigration {
     private api: any;
     private models: Array<Model> = [];
     private devices: Array<Device> = [];
-    private onDevice !: Function;
-    private onState !: Function;
-    private onRequestState !: Function;
+    private onDeviceJoin !: Function;
+    private onDeviceLeave !: Function;
+    private onStateMigration !: Function;
+    private onStateReceive !: Function;
+    private onStateRequest !: Function;
     private asmlValidator = new AsmlValidator();
 
-    constructor(config: Config, onState?: Function, onRequestState?: Function, onDevice?: Function) {
+    constructor(config: Config,
+        onStateRequest?: Function,
+        onStateReceive?: Function,
+        onStateMigration?: Function,
+        onDeviceJoin?: Function,
+        onDeviceLeave?: Function,
+    ) {
         this.api = new Api(config.server, this.onMessage.bind(this), this.onOnline.bind(this));
         this.device = { _id: uuidv4(), name: config.name }
-        this.onDevice = undefined ? () => { } : onDevice;
-        this.onState = undefined ? () => { } : onState;
-        this.onRequestState = undefined ? () => { } : onRequestState;
+
+        this.onStateRequest = undefined ? () => { } : onStateRequest;
+        this.onStateReceive = undefined ? () => { } : onStateReceive;
+        this.onStateMigration = undefined ? () => { } : onStateMigration;
+
+        this.onDeviceJoin = undefined ? () => { } : onDeviceJoin;
+        this.onDeviceLeave = undefined ? () => { } : onDeviceLeave;
     }
 
     addModel(content: any) {
@@ -111,22 +123,26 @@ export default class RunTimeStateMigration {
                 console.log('this.devices', this.devices);
 
                 if (message.data.new) {
-                    this.onDevice({ model_name, device });
+                    this.onDeviceJoin({ model_name, device });
                     this.api.publishDeviceToNewDevice(device, this.device, model);
                 }
             }
 
             if (message.action === 'request-state' && device_id == this.device._id) {
-                this.onRequestState({ model_name, 'device': message.data.device })
+                this.onStateRequest({ model_name, 'device': message.data.device })
             }
 
             if (message.action === 'response-state' && device_id == this.device._id) {
-                this.onState({
+                this.onStateReceive({
                     model_name,
                     device: message.data.device,
                     state: message.data.state,
                     valid: this.asmlValidator.validate(model.content, message.data.state)
                 })
+            }
+
+            if (message.action === 'migration' && device_id == this.device._id) {
+                this.onStateMigration({ model_name, 'device': message.data.device })
             }
 
         } else {
@@ -139,9 +155,11 @@ export default class RunTimeStateMigration {
             console.log('onOnline:', device_id, online);
             console.log(this.devices);
             if (!online) {
+                const device = this.devices.findIndex(device => device._id === device_id);
                 const index = this.devices.findIndex(device => device._id === device_id);
                 if (index >= 0) {
                     this.devices.splice(index, 1);
+                    this.onDeviceLeave(device);
                 }
                 console.log(this.devices);
             }
