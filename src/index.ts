@@ -3,6 +3,8 @@ import { Api } from './api';
 import { v4 as uuidv4 } from 'uuid';
 import AsmlValidator from 'asml-validator';
 
+const TAG = 'rsm:';
+
 export default class RunTimeStateMigration {
     private device: Device;
     private api: any;
@@ -35,7 +37,7 @@ export default class RunTimeStateMigration {
 
     addModel(content: any) {
         if (this.asmlValidator.validateModel(content)) {
-            console.log(content.info.title, 'added');
+            console.log(TAG, content.info.title, 'added');
             if (!this.getModel(content.info.title)) {
                 const model: Model = {
                     _id: uuidv4(),
@@ -75,10 +77,10 @@ export default class RunTimeStateMigration {
     }
 
     sendState(model_name: string, device_id: string) {
-        console.log('sendState');
+        console.log(TAG, 'sendState');
         const model = this.getModel(model_name);
         if (model !== undefined) {
-            console.log(model_name, device_id, this.device, model.state);
+            console.log(TAG, model_name, device_id, this.device, model.state);
             this.api.publishState(model_name, device_id, this.device, model.state);
         } else {
             throw new Error(`On Message: could not find the model '${model_name}'`);
@@ -109,18 +111,35 @@ export default class RunTimeStateMigration {
         const model = this.getModel(model_name);
         if (model !== undefined) {
             if (message.action === 'device') {
+                console.log(TAG, 'onMessage', 'message', message);
+                console.log(TAG, 'onMessage', 'model', model.name);
 
-                console.log('onMessage', 'model', model.name);
 
-                const device = message.data.device;
-                console.log('onMessage', 'model', device.name);
+                // const device = message.data.device;
+                // let deviceIndex =  this.devices.findIndex(d => d._id == device.device_id);
+                // console.log(TAG, 'onMessage', 'device', device);
+                // console.log(TAG, 'onMessage', 'deviceIndex', deviceIndex);
+                // if (deviceIndex == -1) {
+                //     deviceIndex = this.devices.push(device) - 1;
+                // }
+                // if (this.devices[deviceIndex].models === undefined) {
+                //     this.devices[deviceIndex].models = [];
+                // }
+                // this.devices[deviceIndex].models.push(model_name)
+
+                let device = this.devices.find(d => d._id == message.data.device._id);
+                if (device === undefined) {
+                    const i = this.devices.push(message.data.device);
+                    device = this.devices[i - 1];
+                }
 
                 if (device.models === undefined) {
                     device.models = [];
                 }
-                device.models.push(model_name)
-                this.devices.push(device);
-                console.log('this.devices', this.devices);
+
+                device.models.push(model_name);
+
+                console.log(TAG, 'this.devices/new', this.devices);
 
                 if (message.data.new) {
                     this.onDeviceJoin({ model_name, device });
@@ -151,17 +170,18 @@ export default class RunTimeStateMigration {
     }
 
     private onOnline(device_id: string, online: boolean) {
+        console.log(TAG, 'onOnline1:', device_id, online);
         if (device_id !== this.device._id) {
-            console.log('onOnline:', device_id, online);
-            console.log(this.devices);
+            console.log(TAG, 'onOnline2:', device_id, online);
+            console.log(TAG, this.devices);
             if (!online) {
-                const device = this.devices.findIndex(device => device._id === device_id);
+                const device = this.devices.find(device => device._id === device_id);
                 const index = this.devices.findIndex(device => device._id === device_id);
                 if (index >= 0) {
                     this.devices.splice(index, 1);
                     this.onDeviceLeave(device);
                 }
-                console.log(this.devices);
+                console.log(TAG, this.devices);
             }
         }
     }

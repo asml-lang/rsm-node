@@ -1,6 +1,8 @@
 import { AsyncMqttClient as Client, connectAsync as connect } from 'async-mqtt';
 import { Device, Model, State, Config, Server } from './interfaces';
 
+const TAG = 'api:';
+
 const SERVER: Server = {
     url: 'mqtt://130.185.123.111',
     port: 1883
@@ -45,14 +47,14 @@ export class Api {
 
         // subscribe to its model's topic, so it can receive data from other devices
         const b = await this.subscribe(`${model.name}/${device._id}`);
-        console.log('api:', 'subscribe', b);
+        console.log(TAG, 'subscribe', b);
 
         // introduce the device to everybody with the same model
         await this.publish(`${model.name}`, data);
 
         // subscribe to the same model's topic
         const a = await this.subscribe(`${model.name}`);
-        console.log('api:', 'subscribe', a);
+        console.log(TAG, 'subscribe', a);
 
     }
 
@@ -79,7 +81,7 @@ export class Api {
             data: { device, new: false },
         };
 
-        console.log('publishDeviceToNewDevice', `${model.name}/${otherDevice._id}`, data);
+        console.log(TAG, 'publishDeviceToNewDevice', `${model.name}/${otherDevice._id}`, data);
 
         return await this.publish(`${model.name}/${otherDevice._id}`, data);
     }
@@ -104,9 +106,9 @@ export class Api {
     }
 
     private OnMessage(topic: string, payload: Buffer) {
-        console.log('api: OnMessage');
-        console.log('topic', topic);
-        console.log('message', payload.toString());
+        console.log(TAG, 'OnMessage');
+        console.log(TAG, 'topic', topic);
+        console.log(TAG, 'message', payload.toString());
 
         // get the first part of topic. like: sending-email/1 -> sending-email
         const main_topic = topic.split("/").shift();
