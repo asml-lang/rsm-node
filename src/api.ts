@@ -66,6 +66,14 @@ export class Api {
         return this.publish(`${model_name}/${device_id}`, data);
     }
 
+    public async publishMigration(model_name: string, device_id: string, device: Device) {
+        const data = {
+            action: 'migration',
+            data: { device },
+        };
+        return this.publish(`${model_name}/${device_id}`, data);
+    }
+
     public async getStateDevice(model_name: string, device_id: string, device: Device) {
         const data = {
             action: 'request-state',

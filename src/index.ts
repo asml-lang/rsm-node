@@ -87,6 +87,17 @@ export default class RunTimeStateMigration {
         }
     }
 
+    setMigration(model_name: string, device_id: string) {
+        console.log(TAG, 'setMigration');
+        const model = this.getModel(model_name);
+        if (model !== undefined) {
+            console.log(TAG, model_name, device_id, this.device, model.state);
+            this.api.publishMigration(model_name, device_id, this.device);
+        } else {
+            throw new Error(`On Message: could not find the model '${model_name}'`);
+        }
+    }
+
     getDevice() {
         return this.device;
     }
@@ -114,18 +125,6 @@ export default class RunTimeStateMigration {
                 console.log(TAG, 'onMessage', 'message', message);
                 console.log(TAG, 'onMessage', 'model', model.name);
 
-
-                // const device = message.data.device;
-                // let deviceIndex =  this.devices.findIndex(d => d._id == device.device_id);
-                // console.log(TAG, 'onMessage', 'device', device);
-                // console.log(TAG, 'onMessage', 'deviceIndex', deviceIndex);
-                // if (deviceIndex == -1) {
-                //     deviceIndex = this.devices.push(device) - 1;
-                // }
-                // if (this.devices[deviceIndex].models === undefined) {
-                //     this.devices[deviceIndex].models = [];
-                // }
-                // this.devices[deviceIndex].models.push(model_name)
 
                 let device = this.devices.find(d => d._id == message.data.device._id);
                 if (device === undefined) {
