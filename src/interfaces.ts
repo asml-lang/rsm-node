@@ -2,6 +2,7 @@ export interface Device {
     _id: string,
     name: string,
     models?: Array<string>,
+    models_has_state?: Array<string>,
 }
 
 export interface Model {

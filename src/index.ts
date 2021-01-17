@@ -71,6 +71,8 @@ export default class RunTimeStateMigration {
         const model = this.getModel(model_name);
         if (model !== undefined) {
             model.state = state;
+            console.log(TAG, 'setState', model_name, this.device);
+            this.api.publishHasState(model_name, this.device);
         } else {
             throw new Error(`On Message: could not find the model '${model_name}'`);
         }
@@ -110,9 +112,12 @@ export default class RunTimeStateMigration {
         return this.models;
     }
 
-    getDevices(model_name: string) {
+    getDevices(model_name: string, has_state? :boolean) {
         const model = this.getModel(model_name);
         if (model !== undefined) {
+            if (has_state) {
+                return this.devices.filter(device => device.models_has_state.findIndex(key => key === model_name) >= 0);
+            }
             return this.devices.filter(device => device.models.findIndex(key => key === model_name) >= 0);
         }
         throw new Error(`Devices: could not find the model '${model_name}'`);
@@ -136,6 +141,10 @@ export default class RunTimeStateMigration {
                     device.models = [];
                 }
 
+                if (device.models_has_state === undefined) {
+                    device.models_has_state = [];
+                }
+
                 device.models.push(model_name);
 
                 console.log(TAG, 'this.devices/new', this.devices);
@@ -157,6 +166,16 @@ export default class RunTimeStateMigration {
                     state: message.data.state,
                     valid: this.asmlValidator.validate(model.content, message.data.state)
                 })
+            }
+
+
+            if (message.action === 'has-state') {
+                const device = this.devices.find(d => d._id == message.data.device._id);
+                if (device !== undefined) {
+                    if (!device.models_has_state.includes(model_name)) {
+                        device.models_has_state.push(model_name);
+                    }
+                }
             }
 
             if (message.action === 'migration' && device_id == this.device._id) {
