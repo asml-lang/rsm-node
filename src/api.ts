@@ -66,10 +66,10 @@ export class Api {
         return this.publish(`${model_name}/${device_id}`, data);
     }
 
-    public async publishHasState(model_name: string, device: Device) {
+    public async publishHasState(model_name: string, device: Device, value: boolean) {
         const data = {
             action: 'has-state',
-            data: { device },
+            data: { device, value },
         };
         return this.publish(`${model_name}`, data);
     }

@@ -72,7 +72,15 @@ export default class RunTimeStateMigration {
         if (model !== undefined) {
             model.state = state;
             console.log(TAG, 'setState', model_name, this.device);
-            this.api.publishHasState(model_name, this.device);
+        } else {
+            throw new Error(`On Message: could not find the model '${model_name}'`);
+        }
+    }
+
+    setHasState(model_name: string, value: boolean) {
+        const model = this.getModel(model_name);
+        if (model !== undefined) {
+            this.api.publishHasState(model_name, this.device, value);
         } else {
             throw new Error(`On Message: could not find the model '${model_name}'`);
         }
@@ -112,7 +120,7 @@ export default class RunTimeStateMigration {
         return this.models;
     }
 
-    getDevices(model_name: string, has_state? :boolean) {
+    getDevices(model_name: string, has_state?: boolean) {
         const model = this.getModel(model_name);
         if (model !== undefined) {
             if (has_state) {
@@ -172,8 +180,12 @@ export default class RunTimeStateMigration {
             if (message.action === 'has-state') {
                 const device = this.devices.find(d => d._id == message.data.device._id);
                 if (device !== undefined) {
-                    if (!device.models_has_state.includes(model_name)) {
-                        device.models_has_state.push(model_name);
+                    if (message.data.value) {
+                        if (!device.models_has_state.includes(model_name)) {
+                            device.models_has_state.push(model_name);
+                        }
+                    } else {
+                        device.models_has_state.splice(device.models_has_state.indexOf(model_name), 1);
                     }
                 }
             }
